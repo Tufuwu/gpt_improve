@@ -1,42 +1,48 @@
-name: Python Package
+name: CI
 
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ["3.6", "3.7"]
+
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: pip install simplejson minimock coverage
-    - name: Run tests
-      run: make test
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref_type == 'tag'
-    steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Cache pip
+      uses: actions/cache@v3
       with:
-        python-version: '3.x'
-    - name: Publish to PyPI
-      env:
-        TWINE_USERNAME: gpodder
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
       run: |
-        pip install twine
-        python setup.py sdist bdist_wheel
-        twine upload dist/*
+        pip install --upgrade black
+        pip install --upgrade flake8
+        pip install --upgrade -r requirements.txt
+
+    - name: Run flake8
+      run: flake8 --statistics --count
+
+    - name: Run black
+      run: black --check --diff --target-version py36 .
+
+    - name: Run dummy script
+      run: python random_street_view.py --help
