@@ -1,53 +1,42 @@
-name: Python CI
+name: Python package
 
 on:
   push:
     branches:
       - main
-      - dev
   pull_request:
     branches:
       - main
-      - dev
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10, pypy-3.8]
-        test-suite: 
-          - adddelete
-          - compartmentedmodel
-          - networkdynamics
-          - sir
-          - sirs
-          - sir_fixedrecovery
-          - sis
-          - sis_fixedrecovery
-          - seir
-          - stochasticrates
-          - monitor
-          - generators
-          - loci
-          - adddelete
-          - percolate
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install dependencies
       run: |
-        pip install -r requirements.txt
-        pip install coveralls
-    - name: Install package
-      run: python setup.py install
+        python -m pip install --upgrade pip
+        pip install -r test-requirements.txt
+        python setup.py install
+
     - name: Run tests
-      run: coverage run --include './epydemic/*' -m nose test/test_${{ matrix.test-suite }}.py
-    - name: Coveralls
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-      run: coveralls
+      run: python setup.py test
+
+    - name: Run coverage
+      run: coverage run --source circlify tests.py
+
+    - name: Upload coverage to Coveralls
+      uses: coverallsapp/github-action@v2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
