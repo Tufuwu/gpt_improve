@@ -12,30 +12,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      docker:
-        image: docker:latest
-        options: --privileged
+    strategy:
+      matrix:
+        python-version: [3.7]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: ${{ matrix.python-version }}
 
-    - name: Install Docker
-      run: |
-        sudo apt-get update
-        sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+    - name: Install dependencies
+      run: make install-deps
 
-    - name: Build Docker image
-      run: docker build -t draft-kings-fun .
-
-    - name: Run Flake8
-      run: docker run draft-kings-fun flake8 draftfast
-
-    - name: Run Tests
-      run: docker run draft-kings-fun nosetests --with-coverage --cover-package=.
+    - name: Run build
+      run: make
