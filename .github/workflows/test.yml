@@ -1,19 +1,18 @@
-name: CI
+name: Python CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, 3.10]
 
     steps:
     - uses: actions/checkout@v3
@@ -23,35 +22,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
     - name: Install dependencies
       run: |
-        make
-        pip install poetry
-        poetry install
+        pip install -e .
+        pip install -r tests/requirements.txt
 
     - name: Run tests
-      run: make tests
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-
-  notifications:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Send notification
-      uses: joelwmale/webhook-action@v1
-      with:
-        url: https://webhooks.gitter.im/e/55cf16b611593edcb09d
-        on_success: change
-        on_failure: always
-        on_start: never
+      run: |
+        pytest -vv
