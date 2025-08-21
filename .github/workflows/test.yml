@@ -12,18 +12,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        python-version: [3.6, 3.7, 3.8]
-        django-version: [2.2, 3.0]
-        include:
-          - python-version: 3.7
-            env: TOXENV=docs
-          - python-version: 3.7
-            env: TOXENV=quality
-      allow_failures:
-        - python-version: 'nightly'
-        - django-version: 'main'
+        python-version: [3.6]
+        env:
+          - TOXENV=flake8
+          - TOXENV=black
+          - TOXENV=elasticsearch
+
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+        ports:
+          - 9200:9200
+        options: >-
+          --name elasticsearch
+          -e "discovery.type=single-node"
 
     steps:
     - uses: actions/checkout@v3
@@ -37,8 +40,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install tox
+        pip install codecov
 
-    - name: Run tests
-      env:
-        DJANGO: ${{ matrix.django-version }}
+    - name: Run tests with tox
       run: tox
+
+    - name: Upload coverage to Codecov
+      if: success()
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: codecov
