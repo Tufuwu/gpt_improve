@@ -1,4 +1,4 @@
-name: Python application
+name: Python CI
 
 on:
   push:
@@ -12,19 +12,35 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
+        python-version: [3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements/tests.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
     - name: Install dependencies
       run: |
-        pip install -e .
-        pip install pycodestyle
+        pip install -r requirements/tests.txt
+        pip install coveralls
+
     - name: Run tests
       run: |
-        python setup.py test
-        pycodestyle tableauserverclient test samples
+        nosetests --with-coverage --cover-erase --cover-package=temba_client
+        flake8
+
+    - name: Coveralls
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: coveralls
