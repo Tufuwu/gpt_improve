@@ -2,9 +2,11 @@ name: Python CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
@@ -12,10 +14,20 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9, 3.10]
+        python-version: [3.6, 3.7, 3.8, 3.9, pypy3]
         include:
-          - python-version: 'nightly'
-            allow_failures: true
+          - python-version: 3.6
+            env: TOX_ENV: py36
+          - python-version: 3.7
+            env: TOX_ENV: py37
+          - python-version: 3.8
+            env: TOX_ENV: py38
+          - python-version: 3.9
+            env: TOX_ENV: py39
+          - python-version: pypy3
+            env: TOX_ENV: pypy3
+          - python-version: 3.9
+            env: TOX_ENV: lint
 
     steps:
     - uses: actions/checkout@v3
@@ -27,12 +39,18 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install pipenv
-        pipenv install --dev
+        pip install -U -r requirements-dev.txt
+        pip install .
 
-    - name: Lint
-      run: pipenv run lint
+    - name: Run tests
+      run: |
+        tox -e ${{ matrix.env.TOX_ENV }}
+        pytest --dead-fixtures
 
-    - name: Test
-      run: pipenv run test
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
