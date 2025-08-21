@@ -1,4 +1,4 @@
-name: CI
+name: Python package
 
 on:
   push:
@@ -11,16 +11,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    services:
-      mongodb:
-        image: mongo:latest
-        ports:
-          - 27017:27017
 
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, pypy-3.9]
-        django-version: [">=2.2,<2.3", ">=3.0,<3.2", ">=3.2,<3.3"]
+        python-version: ['3.7', '3.8', '3.9']
 
     steps:
     - uses: actions/checkout@v3
@@ -32,9 +26,15 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install poetry
-        poetry install -q
-        poetry run pip install -q Django${{ matrix.django-version }}
+        pip install .
+        pip install -r requirements.txt
+        pip install rednose coverage
 
-    - name: Run tests
-      run: poetry run python -m pytest
+    - name: Test with nosetests
+      run: |
+        nosetests test --rednose --verbosity=3 --with-coverage --cover-package ncclient
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@v2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
