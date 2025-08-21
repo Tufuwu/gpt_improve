@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.9]
+        python-version: [3.8, 3.9, 3.10]
 
     steps:
     - uses: actions/checkout@v3
@@ -24,24 +24,18 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
     - name: Install dependencies
       run: |
-        sudo apt update
-        sudo apt install -y gettext rsync python3-sphinx python3-pyqt5
-        pip install tox tox-venv
+        python -m pip install --upgrade pip
+        pip install pyusb coverage coveralls pyserial PyYAML tqdm
 
-    - name: Build translations
-      run: make all
+    - name: Build
+      run: python setup.py build
 
-    - name: Run tests
-      run: |
-        tox
-        tox -e pylint
+    - name: Test
+      run: coverage run --source=stcgal setup.py test
+
+    - name: Coveralls
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: coveralls
