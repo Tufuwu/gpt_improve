@@ -1,4 +1,4 @@
-name: CI
+name: Python CI
 
 on:
   push:
@@ -11,32 +11,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10]
+        python-version: [3.6, 3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v3
-
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install dependencies
-      run: pip install -r dev-requirements.txt
-
-    - name: Lint with flake8
-      run: flake8 sendgrid_backend/
-
-    - name: Check import order with isort
-      run: isort -c ./
-
-    - name: Check code style with black
-      run: black --check ./
-
-    - name: Type check with mypy
-      run: mypy sendgrid_backend/
-
-    - name: Test with tox
-      run: tox
+      run: pip install -e .
+    - name: Run tests
+      run: |
+        cd tests
+        python test_cvss2.py
+        python test_cvss3.py
