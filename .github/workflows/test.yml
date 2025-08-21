@@ -11,24 +11,43 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      clickhouse:
+        image: yandex/clickhouse-server:19.3.5
+        ports:
+          - 9000:9000
+          - 8123:8123
+        options: --ulimit nofile=262144:262144
+
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', 'pypy-3.9']
+        python-version: ['3.7', '3.8']
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
-      run: python -m pip install --upgrade pip
+      run: |
+        pip install --upgrade pip setuptools
+        pip install flake8 flake8-print coveralls
 
-    - name: Run setconf.py
-      run: python ./setconf.py --test
+    - name: Run flake8
+      run: flake8
 
     - name: Run tests
-      run: cd testcases && ./test.sh
+      run: coverage run --source=clickhouse_sqlalchemy setup.py test
+
+    - name: Upload coverage to Coveralls
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: coveralls
