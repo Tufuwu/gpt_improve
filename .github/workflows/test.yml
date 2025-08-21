@@ -1,4 +1,4 @@
-name: Python package
+name: CI
 
 on:
   push:
@@ -11,26 +11,41 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10, 3.11]
-        django-version: ['2.2', '3.2', '4.0']
-
+        python-version: [3.6, 3.7, 3.8]
+        env:
+          - TOX_ENV=flake8
+          - TOX_ENV=isort
+          - DJANGO=dj22
+          - DJANGO=dj30
+          - DJANGO=dj31
+          - DJANGO=dj32
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install tox
-
+        pip install coverage isort tox
     - name: Run tests
+      run: |
+        if [[ "${{ matrix.env }}" == "flake8" || "${{ matrix.env }}" == "isort" ]]; then
+          tox -e ${{ matrix.env }}
+        else
+          if [[ "${{ matrix.python-version }}" == "3.6" ]]; then
+            tox -e py36
+          elif [[ "${{ matrix.python-version }}" == "3.7" ]]; then
+            tox -e py37
+          elif [[ "${{ matrix.python-version }}" == "3.8" ]]; then
+            tox -e py38
+          fi
+        fi
+    - name: Upload coverage to Codecov
+      if: success()
       env:
-        TOXENV: py${{ matrix.python-version }}-django-${{ matrix.django-version }}
-      run: tox
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: bash <(curl -s https://codecov.io/bash)
