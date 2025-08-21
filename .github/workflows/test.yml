@@ -2,55 +2,33 @@ name: Python CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9, pypy3]
-        include:
-          - python-version: 3.6
-            env: TOX_ENV: py36
-          - python-version: 3.7
-            env: TOX_ENV: py37
-          - python-version: 3.8
-            env: TOX_ENV: py38
-          - python-version: 3.9
-            env: TOX_ENV: py39
-          - python-version: pypy3
-            env: TOX_ENV: pypy3
-          - python-version: 3.9
-            env: TOX_ENV: lint
+        python-version: [3.8, 3.9, 3.10, 3.11]
 
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install dependencies
-      run: |
-        pip install -U -r requirements-dev.txt
-        pip install .
-
+      run: pip install -r requirements.txt
     - name: Run tests
       run: |
-        tox -e ${{ matrix.env.TOX_ENV }}
-        pytest --dead-fixtures
-
-    - name: Cache pip
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+        if [ ${{ matrix.python-version }} == '3.6' ] || [ ${{ matrix.python-version }} == '3.7' ]; then
+          nosetests
+        else
+          nosetests --with-coverage --cover-package=discogs_client
+    - name: Upload coverage to Coveralls
+      if: ${{ matrix.python-version == '3.9' }}
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: coveralls
