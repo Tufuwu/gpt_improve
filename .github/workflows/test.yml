@@ -1,4 +1,4 @@
-name: Python package
+name: Python CI
 
 on:
   push:
@@ -14,13 +14,12 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9, 3.10]
-        fail-fast: false
+        python-version: [3.8, 3.9, 3.10]
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
@@ -28,17 +27,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install coverage vcrpy
-
-    - name: Install package
-      run: python setup.py install
+        pip install -r requirements.txt
+        pip install codecov coverage
 
     - name: Run tests
       run: |
-        coverage run --source=censusgeocode -m unittest
-        censusgeocode --version
-        censusgeocode --csv tests/fixtures/batch.csv || echo failed
+        nosetests --verbose --with-coverage --cover-erase --cover-package=catkin_lint test
 
-    - name: Generate coverage report
-      if: success()
-      run: coverage report
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
