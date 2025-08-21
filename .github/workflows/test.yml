@@ -1,40 +1,36 @@
-name: Python application
+name: Python CI
 
 on:
   push:
     branches:
-      - main
+      - '**'
+      - '!dependabot/**'
   pull_request:
     branches:
-      - main
+      - '**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: [3.6, 3.9, pypy-3.9]
+        python-version: ['3.8', '3.9', '3.10', '3.11', 'pypy-3.8', 'pypy-3.9']
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
     - name: Install dependencies
       run: |
-        pip install -U 'setuptools>=18.5' 'pip>=6.0' 'wheel'
-        pip install -e .
+        if [ "${{ matrix.python-version }}" == "3.8" ]; then
+          pip install cryptography==2.6.1
+        fi
+        pip install -r requirements.txt
 
-    - name: Run tests
-      run: python runtests.py
+    - name: Run script
+      run: ci/travis.sh
