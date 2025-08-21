@@ -10,31 +10,39 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.8, 3.9]
-        include:
-          - python-version: 3.8
-            env: TOXENV=lint
-          - python-version: 3.8
-            env: TOXENV=docs
-          - python-version: 3.8
-            env: TOXENV=isort
+        os: [ubuntu-latest]
+        python-version: ['3.9']
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
+
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install tox codecov
-    - name: Run tox
-      run: tox
-    - name: Upload coverage to Codecov
+      run: pip install -r dev-requirements.txt
+
+    - name: Run make clean
+      run: make clean
+
+    - name: Run make pep8
+      run: make pep8
+
+    - name: Run make flake8
+      run: make flake8
+
+    - name: Run make check
+      run: make check
+
+    - name: Run make unittest
+      run: make unittest
+
+    - name: Upload coverage to Coveralls
       env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      run: codecov
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: coveralls
