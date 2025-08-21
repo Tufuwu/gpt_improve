@@ -1,4 +1,4 @@
-name: Python application
+name: Python package
 
 on:
   push:
@@ -9,12 +9,34 @@ on:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        python-version: [3.9, 3.8, 3.7]
+        python-version: [3.7, 3.8, 3.9, 3.10, 3.11, pypy-3.7, pypy-3.8]
+        include:
+          - python-version: 3.7
+            env: TOXENV=py37
+          - python-version: 3.8
+            env: TOXENV=py38
+          - python-version: 3.9
+            env: TOXENV=py39
+          - python-version: 3.10
+            env: TOXENV=py310
+          - python-version: 3.11
+            env: TOXENV=py311
+          - python-version: pypy-3.7
+            env: TOXENV=pypy
+          - python-version: pypy-3.8
+            env: TOXENV=pypy3
+          - python-version: 3.9
+            env: TOXENV=py27-cover,py39-cover,coverage
+          - python-version: 3.9
+            env: TOXENV=docs
+          - python-version: 3.7
+            env: TOXENV=py27-pyramid14
+          - python-version: 3.9
+            env: TOXENV=py39-pyramid19
 
     steps:
     - uses: actions/checkout@v3
@@ -24,8 +46,14 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install . -r requirements.txt
+        python -m pip install --upgrade pip setuptools
+        pip install tox
     - name: Run tests
-      run: |
-        pytest
+      run: tox
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
