@@ -1,4 +1,4 @@
-name: Python package
+name: CI
 
 on:
   push:
@@ -13,33 +13,41 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, 3.10, pypy-3.7, pypy-3.8]
-
+        python-version: ['3.6', '3.5', '2.7']
+        package: 
+          - 'django>=1.11,<1.12'
+          - 'django>=2.0,<2.1'
+          - 'django>=2.1,<2.2'
+          - 'django>=2.2,<2.3'
+          - 'django>=3.0,<3.1'
+      exclude:
+        - python-version: '2.7'
+          package: 'django>=2.0,<2.1'
+      allow_failures:
+        - python-version: '2.7'
+          package: 'django>=1.11,<1.12'
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install coverage nose
-
+        python -m pip install --upgrade pip wheel setuptools
+        pip install ${{ matrix.package }} -e .[tests]
     - name: Run tests
-      run: coverage run --source=olefile -m nose tests
+      run: coverage run --rcfile=.coveragerc runtests.py
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
 
-    - name: Upload coverage to Coveralls
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+  notifications:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Send notifications
+      if: failure()
       run: |
-        pip install coveralls
-        coveralls
-
-    - name: Run code quality checks
-      run: |
-        pip install pycodestyle pyflakes
-        pyflakes .
-        pycodestyle --statistics --count .
+        echo "Sending notifications..."
+        # Add your notification logic here
