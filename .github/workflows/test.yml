@@ -1,4 +1,4 @@
-name: CI
+name: Python package
 
 on:
   push:
@@ -9,23 +9,17 @@ on:
       - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.6', '3.5', '2.7']
-        package: 
-          - 'django>=1.11,<1.12'
-          - 'django>=2.0,<2.1'
-          - 'django>=2.1,<2.2'
-          - 'django>=2.2,<2.3'
-          - 'django>=3.0,<3.1'
-      exclude:
-        - python-version: '2.7'
-          package: 'django>=2.0,<2.1'
-      allow_failures:
-        - python-version: '2.7'
-          package: 'django>=1.11,<1.12'
+        python-version: [3.6, 3.7, 3.8, 3.9, 3.10]
+        django-version: ["2.2.*", "3.2.*", "4.0.*"]
+        exclude:
+          - python-version: 3.6
+            django-version: "4.0.*"
+          - python-version: 3.7
+            django-version: "4.0.*"
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
@@ -34,20 +28,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip wheel setuptools
-        pip install ${{ matrix.package }} -e .[tests]
+        python -m pip install --upgrade pip
+        pip install Django==${{ matrix.django-version }}
+        pip install requests
+        pip install -e .
     - name: Run tests
-      run: coverage run --rcfile=.coveragerc runtests.py
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-
-  notifications:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Send notifications
-      if: failure()
-      run: |
-        echo "Sending notifications..."
-        # Add your notification logic here
+      run: python runtests.py
