@@ -14,7 +14,12 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "pypy3"]
+        python-version: [3.6, 3.7, 3.8, 3.9]
+        include:
+          - python-version: 3.6
+            env: TOX_SKIP_ENV: typeshed
+          - python-version: 3.7
+            env: TOX_SKIP_ENV: typeshed
 
     steps:
     - uses: actions/checkout@v3
@@ -25,26 +30,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
-      run: |
-        pip install -e .
-        pip install requests pytest-cov
-
-    - name: Start services
-      run: |
-        docker-compose -f tests/config/docker-compose.yml up -d
-        sleep 120
-        ./tests/config/bootstrap
+      run: pip install tox
 
     - name: Run tests
-      run: |
-        pytest -v --cov=pygelf
-
-    - name: Stop services
-      if: always()
-      run: docker-compose -f tests/config/docker-compose.yml down
-
-    - name: Upload coverage to Coveralls
-      if: success()
       env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-      run: coveralls
+        TOX_SKIP_ENV: ${{ matrix.env.TOX_SKIP_ENV }}
+      run: tox
