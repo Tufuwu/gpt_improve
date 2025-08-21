@@ -1,10 +1,12 @@
-name: Python CI
+name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
@@ -12,26 +14,22 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10, 3.11]
+        python-version: [3.6, 3.9]
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
-        pip install flake8
-        pip install -r requirements.txt
-
-    - name: Run Flake8
-      run: flake8 .
-
-    - name: Set SECRET_KEY
-      run: sed -i.bak "s/^SECRET_KEY = ''$/SECRET_KEY = 'randomstring'/g" tramcar/settings.py
+        python -m pip install --upgrade pip
+        pip install tox
 
     - name: Run tests
-      run: python manage.py test
+      env:
+        TOX_ENV: py${{ matrix.python-version }}
+      run: tox -e $TOX_ENV
