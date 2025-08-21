@@ -14,22 +14,25 @@ jobs:
 
     strategy:
       matrix:
-        toxenv:
-          - pep8
-          - py3
+        python-version: ['3.8', '3.9', '3.10', '3.11']
 
     steps:
     - uses: actions/checkout@v3
-
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: '3.x'
-
+        python-version: ${{ matrix.python-version }}
     - name: Install dependencies
-      run: pip install -U tox
-
-    - name: Run Tox
+      run: pip install tox codecov
+    - name: Run tests
       run: tox
+    - name: Upload coverage to Codecov
       env:
-        TOXENV: ${{ matrix.toxenv }}
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: |
+        VERSION="python_${{ matrix.python-version//[^[:alnum:]]/}}" &&
+        codecov --required --flags $VERSION ||
+        (sleep 5 && codecov --required --flags $VERSION) ||
+        (sleep 10 && codecov --required --flags $VERSION) ||
+        (sleep 20 && codecov --required --flags $VERSION) ||
+        (sleep 30 && codecov --required --flags $VERSION)
