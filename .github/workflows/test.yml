@@ -1,4 +1,4 @@
-name: CI
+name: Python package
 
 on:
   push:
@@ -14,25 +14,21 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
-        include:
-          - python-version: 3.6
-            env: TOX_SKIP_ENV: typeshed
-          - python-version: 3.7
-            env: TOX_SKIP_ENV: typeshed
+        python-version: [3.8, 3.9, 3.10, 3.11, pypy-3.8, pypy-3.9]
 
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install dependencies
-      run: pip install tox
-
+      run: |
+        pip install -r test-requirements.txt
+        pip install -e .
     - name: Run tests
+      run: nosetests -q --with-coverage --cover-package=pycron
+    - name: Upload coverage to Coveralls
       env:
-        TOX_SKIP_ENV: ${{ matrix.env.TOX_SKIP_ENV }}
-      run: tox
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: coveralls
