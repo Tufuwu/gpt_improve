@@ -1,4 +1,4 @@
-name: Python CI
+name: Python application
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: [3.x]
 
     steps:
     - uses: actions/checkout@v3
@@ -23,16 +23,8 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
-      run: pip install tox codecov
-    - name: Run tests
-      run: tox
-    - name: Upload coverage to Codecov
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       run: |
-        VERSION="python_${{ matrix.python-version//[^[:alnum:]]/}}" &&
-        codecov --required --flags $VERSION ||
-        (sleep 5 && codecov --required --flags $VERSION) ||
-        (sleep 10 && codecov --required --flags $VERSION) ||
-        (sleep 20 && codecov --required --flags $VERSION) ||
-        (sleep 30 && codecov --required --flags $VERSION)
+        python -m pip install --upgrade pip
+    - name: Run tests
+      run: |
+        python runtest.py
