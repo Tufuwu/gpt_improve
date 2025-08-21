@@ -1,4 +1,4 @@
-name: Python application
+name: Python CI
 
 on:
   push:
@@ -14,18 +14,22 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.7, pypy-3.9]
+        toxenv:
+          - pep8
+          - py3
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.x'
 
     - name: Install dependencies
-      run: pip install -r requirements.txt
+      run: pip install -U tox
 
-    - name: Run tests
-      run: python setup.py test
+    - name: Run Tox
+      run: tox
+      env:
+        TOXENV: ${{ matrix.toxenv }}
