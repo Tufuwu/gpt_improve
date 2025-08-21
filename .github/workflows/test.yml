@@ -1,12 +1,10 @@
-name: Python application
+name: Python CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
@@ -14,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10, 3.11]
+        python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
 
     steps:
     - uses: actions/checkout@v3
@@ -25,7 +23,24 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
-      run: pip install flake8
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y graphviz python3-tk python3-matplotlib
+        pip install Sphinx recommonmark pep8 coverage coveralls numpy
 
-    - name: Run flake8
-      run: flake8 . --max-line-length=120 --exclude .git,lib,__pycache__
+    - name: Run tests
+      run: |
+        python -Wall setup.py try
+        python setup.py install
+        python -Wall setup.py test
+        COVERAGE=1 coverage run test/runtest.py
+        python run.py --doctest
+        python run.py --html
+
+    - name: Check code style
+      run: pep8 --exclude=asizeof.py,metadata.py,bottle*.py --max-line-length=80 pympler
+
+    - name: Upload coverage to Coveralls
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: coveralls
