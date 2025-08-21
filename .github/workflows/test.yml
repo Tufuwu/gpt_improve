@@ -1,4 +1,4 @@
-name: CI
+name: Python package
 
 on:
   push:
@@ -14,50 +14,22 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8"]
-        django-version: ["dj22", "dj30", "dj31", "dj32", "djdev"]
-        mode: ["flake8", "flake8-strict", "docs"]
-        exclude:
-          - python-version: "3.6"
-            mode: "flake8"
-          - python-version: "3.6"
-            mode: "flake8-strict"
-          - python-version: "3.6"
-            mode: "docs"
-          - python-version: "3.6"
-            django-version: "dj30"
-          - python-version: "3.6"
-            django-version: "dj31"
-          - python-version: "3.6"
-            django-version: "dj32"
-          - python-version: "3.6"
-            django-version: "djdev"
-      fail-fast: false
+        python-version: [3.8, 3.9, 3.10, 3.11]
 
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -U wheel virtualenv
-        pip install tox coveralls
-
+        pip install -r requirements.txt -r test-requirements.txt
     - name: Run tests
-      env:
-        DJANGO_VERSION: ${{ matrix.django-version }}
-        MODE: ${{ matrix.mode }}
       run: |
-        coverage erase
-        tox -e py${{ matrix.python-version }}-${{ matrix.django-version }}${{ matrix.mode }}
-
-    - name: Coveralls
-      if: success()
-      run: coveralls
+        pytest --cov tdclient tdclient/test
+    - name: Upload coverage to Coveralls
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: |
+        coveralls
