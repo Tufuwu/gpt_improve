@@ -1,4 +1,4 @@
-name: Python CI
+name: CI
 
 on:
   push:
@@ -11,32 +11,34 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
 
     steps:
     - uses: actions/checkout@v3
-      with:
-        fetch-depth: 10
 
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y git build-essential automake libtool python3-dev gettext swig
-        pip install flake8
+      run: pip install tox
 
-    - name: Lint with flake8
-      run: |
-        flake8 --version
-        echo compiling AutoBouquetsMaker enigma2 plugin
-        python -m compileall .
-        find . -type f -name "*.po" -exec msgfmt {} -o {}.mo \;
-        flake8 --ignore=W191,E128,E501,E722 . --exit-zero
-        echo done.
+    - name: Run tests
+      run: tox
+
+  notify:
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Send Slack notification
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        payload: |
+          {
+            "text": "GitHub Actions build completed."
+          }
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
