@@ -10,18 +10,48 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    services:
+      docker:
+        image: docker:latest
+
+    strategy:
+      matrix:
+        python-version: ['3.6']
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: '3.x'
+        python-version: ${{ matrix.python-version }}
 
-    - name: Generate settings.py
-      run: echo "from Default.settings import *" > settings.py
+    - name: Install dependencies
+      run: pip install -r requirements.txt
 
-    - name: Run generate script
-      run: python ./generate.py
+    - name: Run tests
+      run: ./tests/run_tests.sh
+
+  deploy:
+    runs-on: ubuntu-22.04
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python 3.6
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.6
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Build package
+      run: python setup.py install_egg_info sdist bdist_wheel
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.8.6
+      with:
+        password: ${{ secrets.PYPI_TOKEN }}
