@@ -1,4 +1,4 @@
-name: Python CI
+name: Python package
 
 on:
   push:
@@ -11,10 +11,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: [3.7, 3.8, 3.9, 3.10, pypy-3.7, pypy-3.8]
 
     steps:
     - uses: actions/checkout@v3
@@ -26,9 +25,21 @@ jobs:
 
     - name: Install dependencies
       run: |
-        if [[ ${{ matrix.python-version }} == 3* ]]; then
-          pip install -r py3_requirements.txt
-        fi
+        python -m pip install --upgrade pip
+        pip install coverage nose
 
-    - name: Test with Make
-      run: make test
+    - name: Run tests
+      run: coverage run --source=olefile -m nose tests
+
+    - name: Upload coverage to Coveralls
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: |
+        pip install coveralls
+        coveralls
+
+    - name: Run code quality checks
+      run: |
+        pip install pycodestyle pyflakes
+        pyflakes .
+        pycodestyle --statistics --count .
