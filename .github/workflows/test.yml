@@ -1,4 +1,4 @@
-name: Python application
+name: CI
 
 on:
   push:
@@ -9,29 +9,43 @@ on:
       - main
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-
+  build:
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10, 3.11]
-        django-version: [3.2, 4.0, 4.1]
-
+        python-version: [3.6, 3.7, 3.9, 3.10]
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install dependencies
       run: |
-        pip install Django==${{ matrix.django-version }}
-        pip install -e .[flake8,tests]
+        pip install -r mock/requirements.txt
+        pip install pytest-cov
+    - name: Run tests
+      run: |
+        PYTHON=python${{ matrix.python-version }} ./mock/run-tests.sh
 
-    - name: Lint with flake8
-      run: flake8
-
-    - name: Test with pytest
-      run: pytest
+  copr-build:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - python-version: 3.9
+            package: mock
+            name: mock RPM in Copr
+          - python-version: 3.9
+            package: mock-core-configs
+            name: mock-core-configs RPM in Copr
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Copr build
+      run: |
+        PACKAGE=${{ matrix.package }} .travis/copr-build
