@@ -1,40 +1,24 @@
-from setuptools import setup, find_packages
+import setuptools
 
-setup(
-    name="django-statici18n",
-    version="2.1.1",
-    author="Sebastien Fievet",
-    author_email="zyegfryed@gmail.com",
-    url="http://django-statici18n.readthedocs.org/",
-    description="A Django app that provides helper for generating "
-    "Javascript catalog to static files.",
-    long_description=open("README.rst").read(),
-    package_dir={"": "src"},
-    packages=find_packages("src"),
-    include_package_data=True,
-    zip_safe=False,
+with open('README.md', 'r') as fh:
+    long_description = fh.read()
+
+setuptools.setup(
+    name='soft-webauthn',
+    version='0.1.3',
+    author='Radoslav Bodó',
+    author_email='bodik@cesnet.cz',
+    description='Python webauthn software authenticator',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    url='https://github.com/bodik/soft-webauthn',
+    py_modules=['soft_webauthn'],
     install_requires=[
-        "Django>=2.2",
-        "django-appconf>=1.0",
+        'fido2>=0.8,<1.0.0',
+        'cryptography'
     ],
-    license="BSD",
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
-        "Environment :: Web Environment",
-        "Framework :: Django",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: BSD License",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
+        'Programming Language :: Python :: 3',
+        'License :: OSI Approved :: MIT License',
     ],
-    project_urls={
-        "Source": "https://github.com/zyegfryed/django-statici18n",
-    },
 )
