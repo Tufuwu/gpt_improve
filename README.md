@@ -1,196 +1,195 @@
-| **IMPORTANT!** |
-| -------------- |
-| As of May 17, 2020, `python-vipaccess` stopped working for provisioning new Symantec VIP Access tokens (which was its raison d'être). |
-| As of May 27, 2020, it's working again. |
-| It might stop working again. and we might not be able to get it to work again [(see #39)](https://github.com/dlenski/python-vipaccess/issues/39#issuecomment-628741743) |
+vpn-slice
+=========
 
-python-vipaccess
-================
-
-[![PyPI](https://img.shields.io/pypi/v/python-vipaccess.svg)](https://pypi.python.org/pypi/python-vipaccess)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Build Status](https://github.com/dlenski/python-vipaccess/workflows/test_and_release/badge.svg)](https://github.com/dlenski/python-vipaccess/actions?query=workflow%3Atest_and_release)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Build Status](https://github.com/dlenski/vpn-slice/workflows/test_and_release/badge.svg)](https://github.com/dlenski/vpn-slice/actions?query=workflow%3Atest_and_release)
+[![PyPI](https://img.shields.io/pypi/v/vpn-slice.svg)](https://pypi.python.org/pypi/vpn-slice)
+[![Homebrew](https://img.shields.io/homebrew/v/vpn-slice.svg)](https://formulae.brew.sh/formula/vpn-slice)
 
 Table of Contents
 =================
 
-* [python-vipaccess](#python-vipaccess)
-* [Table of Contents](#table-of-contents)
-   * [Intro](#intro)
-   * [Dependencies](#dependencies)
-   * [Installation](#installation)
-   * [Usage](#usage)
-      * [Provisioning a new VIP Access credential](#provisioning-a-new-vip-access-credential)
-      * [Display a QR code to register your credential with mobile TOTP apps](#display-a-qr-code-to-register-your-credential-with-mobile-totp-apps)
-      * [Generating access codes using an existing credential](#generating-access-codes-using-an-existing-credential)
+  * [Introduction](#introduction)
+    * [Who this is for](#who-this-is-for)
+    * [Requirements](#requirements)
+    * [First steps](#first-steps)
+    * [Usage](#usage)
+    * [Diagnostics](#diagnostics)
+  * [Inspiration and credits](#inspiration-and-credits)
+  * [License](#license)
+    * [TODO](#todo)
 
-This is a fork of [**`cyrozap/python-vipaccess`**](https://github.com/dlenski/python-vipaccess). Main differences:
+## Introduction
 
-- No dependency on `qrcode` or `image` libraries; you can easily use
-  external tools such as [`qrencode`](https://github.com/fukuchi/libqrencode)
-  to convert an `otpauth://` URI to a QR code if needed, so it seems
-  unnecessary to build in this functionality.
-- Option to generate either the mobile (`SYMC/VSMT`) or desktop (`SYDC/VSST`)
-  versions of the VIP Access tokens; as far as I can tell there is no
-  real difference between them, but some clients require one or the
-  other specifically. There are also some rarer token types/prefixes
-  which can be generated if necessary
-  ([reference list from Symantec](https://support.symantec.com/us/en/article.tech239895.html))
-- Command-line utility is expanded to support *both* token
-  provisioning (creating a new token) and emitting codes for an
-  existing token (inspired by the command-line interface of
-  [`stoken`](https://github.com/cernekee/stoken), which handles the same functions for [RSA SecurID](https://en.wikipedia.org/wiki/RSA_SecurID) tokens
+This is a replacement for the
+[`vpnc-script`](https://www.infradead.org/openconnect/vpnc-script.html)
+used by [OpenConnect](https://www.infradead.org/openconnect) or
+[VPNC](https://www.unix-ag.uni-kl.de/~massar/vpnc).
 
-Intro
------
+Instead of trying to copy the behavior of standard corporate VPN clients,
+which normally reroute **all** your network traffic through the VPN,
+this one tries to _minimize your contact_ with an intrusive VPN.
+This is also known as a
+[split-tunnel](https://en.wikipedia.org/wiki/Split_tunneling) VPN, since
+it splits your traffic between the VPN tunnel and your normal network
+interfaces.
 
-python-vipaccess is a free and open source software (FOSS)
-implementation of Symantec's VIP Access client (now owned by Broadcom).
+`vpn-slice` makes it easy to set up a split-tunnel VPN:
 
-If you need to access a network which uses VIP Access for [two-factor
-authentication](https://en.wikipedia.org/wiki/Two-factor_authentication),
-but can't or don't want to use Symantec's proprietary
-applications—which are only available for Windows, MacOS, Android,
-iOS—then this is for you.
+* It only routes traffic for **specific hosts or subnets** through the VPN.
+* It automatically looks up named hosts, using the VPN's DNS servers,
+  and adds entries for them to your `/etc/hosts` (which it cleans up
+  after VPN disconnection), however it **does not otherwise alter your
+  `/etc/resolv.conf` at all**.
 
-As [@cyrozap](https://github.com/cyrozap) discovered in reverse-engineering the VIP Access protocol
-([original blog
-post](https://www.cyrozap.com/2014/09/29/reversing-the-symantec-vip-access-provisioning-protocol)),
-Symantec VIP Access actually uses a **completely open standard**
-called [Time-based One-time Password
-Algorithm](https://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm)
-for generating the 6-digit codes that it outputs. The only
-non-standard part is the **provisioning** protocol used to create a
-new token.
+## Who this is for
 
-Dependencies
-------------
+If you are using a VPN to route *all* your traffic for privacy reasons
+(or to avoid censorship in repressive countries), then you **do not want
+to use this**.
 
--  Python 3.3+ (recommended) or 2.7 (not recommended)
--  [`oath`](https://pypi.python.org/pypi/oath/1.4.1)
--  [`pycryptodome`](https://pypi.python.org/pypi/pycryptodome/3.6.6)
--  [`requests`](https://pypi.python.org/pypi/requests)
+The purpose of this tool is almost the opposite; it makes it easy to
+connect to a VPN while **minimizing** the traffic that passes over the
+VPN.
 
-For development purposes, you can install the dependencies with `pip install -r requirements.txt` in
-the project root directory.
+This is for people who have to connect to the high-security VPNs of
+corporations or other bureaucracies (which monitor and filter and
+otherwise impede network traffic), and thus wish to route as little
+traffic as possible through those VPNs.
 
-To install `pip` see the [`pip` installation documentation](https://pip.pypa.io/en/stable/installing/).
+## Requirements
 
-Installation
-------------
+* Python 3.3+
+* Either of the following:
+  * [`dnspython`](https://pypi.org/project/dnspython) module (**preferred**, tested with v1.16.0)
+  * [`dig`](https://en.wikipedia.org/wiki/Dig_(command)) command-line DNS lookup tool (tested with v9.9.5 and v9.10.3)
+* Supported OSes:
+  * Linux kernel 3.x+ with
+    [`iproute2`](https://en.wikipedia.org/wiki/iproute2) and
+    [`iptables`](https://en.wikipedia.org/wiki/iptables) utilities
+    (used for all routing setup)
+  * macOS 10.x with BSD
+    [`route`](https://en.wikipedia.org/wiki/Route_(command))
+  * FreeBSD with BSD
+    [`route`](https://en.wikipedia.org/wiki/Route_(command))
+    if [`procfs`](https://www.freebsd.org/cgi/man.cgi?query=procfs&sektion=5) is mounted
 
-Install with [`pip3`](https://pip.pypa.io/en/stable/installing/) to automatically fetch Python
-dependencies. (Note that on most systems, `pip3` invokes the Python 3.x version, while `pip` invokes
-the Python 2.7 version; Python 2.7 is still supported, but not recommended because it's nearing
-obsolescence.)
+You can install the latest build with `pip` (make sure you are using
+the Python 3.x version, usually invoked with `pip3`).
 
-```
-# Install latest release from PyPI
-$ pip3 install python-vipaccess
+You should install as `root` (e.g. using `sudo`), because
+`openconnect` or `vpnc` will need to be able to invoke `vpn-slice`
+while running as root:
 
-# Install latest development version from GitHub
-$ pip3 install https://github.com/dlenski/python-vipaccess/archive/HEAD.zip
-```
+    $ sudo pip3 install https://github.com/dlenski/vpn-slice/archive/master.zip
 
-Usage
------
+On macOS, you can also install using [Homebrew](https://brew.sh):
 
-### Provisioning a new VIP Access credential
+    $ brew install vpn-slice
 
-This is used to create a new VIP Access token. It connects to https://services.vip.symantec.com/prov
-and requests a new token, then deobfuscates it, and checks whether it is properly decoded and
-working correctly, via a second request to https://vip.symantec.com/otpCheck.
+## First steps
 
-By default it stores the new token in the file `.vipaccess` in your home directory (in a
-format similar to `stoken`), but it can store to another file instead,
-or instead just print out the "token secret" string with instructions
-about how to use it.
+Before trying to use `vpn-slice` with `openconnect` or `vpnc`,
+check that it works properly on your platform, and can verify that it has all of
+the access and dependencies that it needs (to modify `/etc/hosts`, alter
+routing table, etc.):
 
-```
-usage: vipaccess provision [-h] [-p | -o DOTFILE] [-t TOKEN_MODEL]
+    $ sudo vpn-slice --self-test
+    ***************************************************************************
+    *** Self-test passed. Try using vpn-slice with openconnect or vpnc now. ***
+    ***************************************************************************
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -p, --print           Print the new credential, but don't save it to a file
-  -o DOTFILE, --dotfile DOTFILE
-                        File in which to store the new credential (default
-                        ~/.vipaccess)
-  -i ISSUER, --issuer ISSUER
-                        Specify the issuer name to use (default: Symantec)
-  -t TOKEN_MODEL, --token-model TOKEN_MODEL
-                        VIP Access token model. Often SYMC/VSMT ("mobile"
-                        token, default) or SYDC/VSST ("desktop" token). Some
-                        clients only accept one or the other. Other more
-                        obscure token types also exist:
-                        https://support.symantec.com/en_US/article.TECH239895.html
-```
+If you run the self-test as a non-`root` user, it will tell you what required
+access it is unable to obtain:
 
-Here is an example of the output from `vipaccess provision -p`:
+    $ vpn-slice --self-test
+    WARNING: Couldn't configure hosts provider: Cannot read/write /etc/hosts
+    ******************************************************************************************
+    *** Self-test did not pass. Double-check that you are running as root (e.g. with sudo) ***
+    ******************************************************************************************
+    Aborting because providers for hosts are required; use --help for more information
 
-```
-Generating request...
-Fetching provisioning response from Symantec server...
-Getting token from response...
-Decrypting token...
-Checking token against Symantec server...
-Credential created successfully:
-	otpauth://totp/VIP%20Access:SYMC12345678?secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&issuer=Symantec&algorithm=SHA1&digits=6
-This credential expires on this date: 2019-01-15T12:00:00.000Z
+When you start trying to use `vpn-slice` for real, you should use the
+[diagnostic options](#diagnostics) (e.g `openconnect -s 'vpn-slice
+--verbose --dump'`) to troubleshoot and understand its behavior.
 
-You will need the ID to register this credential: SYMC12345678
+## Usage
 
-You can use oathtool to generate the same OTP codes
-as would be produced by the official VIP Access apps:
+You should specify `vpn-slice` as your connection script with
+`openconnect` or `vpnc`. It has been tested with vpnc v0.5.3, OpenConnect
+v7.06+ (Cisco AnyConnect and Juniper protocols) and v8.0+ (PAN GlobalProtect
+protocol).
 
-    oathtool    -b --totp AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA  # output one code
-    oathtool -v -b --totp AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA  # ... with extra information
+For example:
+
+```sh
+$ sudo openconnect gateway.bigcorp.com -u user1234 \
+    -s 'vpn-slice 192.168.1.0/24 hostname1 alias2=alias2.bigcorp.com=192.168.1.43'
+$ cat /etc/hosts
+...
+192.168.1.1 dns0.tun0					# vpn-slice-tun0 AUTOCREATED
+192.168.1.2 dns1.tun0					# vpn-slice-tun0 AUTOCREATED
+192.168.1.57 hostname1 hostname1.bigcorp.com		# vpn-slice-tun0 AUTOCREATED
+192.168.1.43 alias2 alias2.bigcorp.com		# vpn-slice-tun0 AUTOCREATED
 ```
 
-Here is the format of the `.vipaccess` token file output from
-`vipaccess provision [-o ~/.vipaccess]`. (This file is created with
-read/write permissions *only* for the current user.)
+or
 
-```
-version 1
-secret AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-id SYMC12345678
-expiry 2019-01-15T12:00:00.000Z
-```
-
-### Display a QR code to register your credential with mobile TOTP apps
-
-Once you generate a token with `vipaccess provision`, use `vipaccess uri` to show the `otpauth://` URI and
-[`qrencode`](https://fukuchi.org/works/qrencode/manual/index.html) to display that URI as a QR code:
-
-```
-$ qrencode -t UTF8 'otpauth://totp/VIP%20Access:SYMCXXXX?secret=YYYY&issuer=Symantec&algorithm=SHA1&digits=6'
+```sh
+# With most versions of vpnc, you *must* specify an absolute path
+# for the disconnect hook to work correctly, due to a bug.
+#
+# I reported this bug, but the original maintainers no longer maintain vpnc.
+#   https://lists.unix-ag.uni-kl.de/pipermail/vpnc-devel/2016-August/004199.html
+#
+# However, some Linux distro packagers have picked up my patch in recent
+# releases, e.g. Ubuntu 17.04:
+#   https://changelogs.ubuntu.com/changelogs/pool/universe/v/vpnc/vpnc_0.5.3r550-3/changelog
+#
+$ sudo vpnc config_file \
+       --script '/path/to/vpn-slice 192.168.1.0/24 hostname1 alias2=alias2.bigcorp.com=192.168.1.43'
 ```
 
-Scan the code into your TOTP generating app,
-like [FreeOTP](https://freeotp.github.io/) or
-[Google Authenticator](https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2).
+Notice that `vpn-slice` accepts both *hostnames alone* (`hostname1`) as well as
+host-to-IP* aliases (`alias2=alias2.bigcorp.com=192.168.1.43`). The former are first looked up using the
+VPN's DNS servers. Both are also added to the routing table, as well as to
+`/etc/hosts` (unless `--no-host-names` is specified). As in this
+example, multiple aliases can be specified for a single IP address.
 
-### Generating access codes using an existing credential
+There are many command-line options to alter the behavior of
+`vpn-slice`; try `vpn-slice --help` to show them all.
 
-The `vipaccess [show]` option will also do this for you: by default it
-generates codes based on the credential in `~/.vipaccess`, but you can
-specify an alternative credential file or specify the OATH "token
-secret" on the command line.
+# Diagnostics
 
-```
-usage: vipaccess show [-h] [-s SECRET | -f DOTFILE]
+Running with `--verbose` makes it explain what it is doing, while running with
+`--dump` shows the environment variables passed in by the caller.
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -s SECRET, --secret SECRET
-                        Specify the token secret on the command line (base32
-                        encoded)
-  -f DOTFILE, --dotfile DOTFILE
-                        File in which the credential is stored (default
-                        ~/.vipaccess
-```
+# Inspiration and credits
 
-As alluded to above, you can use other standard
-[OATH](https://en.wikipedia.org/wiki/Initiative_For_Open_Authentication)-based
-tools to generate the 6-digit codes identical to what Symantec's official
-apps produce.
+* [**@jagtesh**](https://github.com/jagtesh)'s
+  [split-tunnelling tutorial gist](https://gist.github.com/jagtesh/5531300) taught me the
+  basics of how to set up a split-tunnel VPN by wrapping the standard `vpnc-script`.
+* [**@apenwarr**](https://github.com/apenwarr)'s
+  [sshuttle](https://github.com/apenwarr/sshuttle) has the excellent
+  `--auto-hosts` and `--seed-hosts` options. These inspired the
+  automatic host lookup feature.
+* [**@gmacon**](https://github.com/gmacon)'s
+  [PR #11](https://github.com/dlenski/vpn-slice/pull/11) substantially
+  refactored the code to separate the OS-dependent parts more
+  cleanly, and added macOS support.
+* [**@joelbu**](https://github.com/joelbu)'s
+  [PR #30](https://github.com/dlenski/vpn-slice/pull/30) added support for IPv6 DNS
+  lookups using `dig`.
+
+# License
+
+GPLv3 or later.
+
+## TODO / Help Wanted
+
+* Better error-explaining
+* Fix timing issues
+* Improve IPv6 support
+* Support OSes other than Linux and macOS
+    * Other Unix-like operating systems should be pretty easy
+* Mechanism for specifying split-_exclude_ subnets on the command line
