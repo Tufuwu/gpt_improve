@@ -1,30 +1,24 @@
 import setuptools
 
-with open("README.md", "r") as fh:
+with open('README.md', 'r') as fh:
     long_description = fh.read()
 
-import versioneer
-
 setuptools.setup(
-    name="removestar",
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
-    author="Aaron Meurer",
-    author_email="asmeurer@gmail.com",
-    description="A tool to automatically replace 'import *' imports with explicit imports in files",
+    name='soft-webauthn',
+    version='0.1.3',
+    author='Radoslav Bodó',
+    author_email='bodik@cesnet.cz',
+    description='Python webauthn software authenticator',
     long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://www.asmeurer.com/removestar/",
-    packages=setuptools.find_packages(),
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
-    ],
-    entry_points={'console_scripts': [ 'removestar = removestar.__main__:main']},
-    python_requires= '>=3.6',
+    long_description_content_type='text/markdown',
+    url='https://github.com/bodik/soft-webauthn',
+    py_modules=['soft_webauthn'],
     install_requires=[
-        'pyflakes'
+        'fido2>=0.8,<1.0.0',
+        'cryptography'
     ],
-    license='MIT',
+    classifiers=[
+        'Programming Language :: Python :: 3',
+        'License :: OSI Approved :: MIT License',
+    ],
 )
