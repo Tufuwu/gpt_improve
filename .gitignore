@@ -1,28 +1,12 @@
+.DS_Store
 *.pyc
-
-# Distribution / packaging
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-.idea/*
-.pytest_cache/*
-.tags*
+.cache/
+temp_files/
 .vscode/
-
-# pytest coverage plugin
+test.zip
+tests/data/test_download.jpg
 .coverage
+.idea
+.venv
 
-.tool-versions
+docs/build/*

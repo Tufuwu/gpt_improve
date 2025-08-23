@@ -1,39 +1,39 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-
+import os
+import re
 from setuptools import setup, find_packages
 
 
-with open('README.rst', 'rb') as f:
-    readme = f.read().decode('utf-8')
+def read(filename):
+    return open(os.path.join(os.path.dirname(__file__), filename)).read()
 
-with open('requirements.txt') as f:
-    requires = f.readlines()
+
+def read_version():
+    with open('filestack/__init__.py') as f:
+        return re.search(r'__version__ = \'(.+)\'$', f.readline()).group(1)
+
 
 setup(
-    name='greenswitch',
-    version='0.0.12',
-    description=u'Battle proven FreeSWITCH Event Socket Protocol client implementation with Gevent.',
-    long_description=readme,
-    author=u'Ítalo Rossi',
-    author_email=u'italorossib@gmail.com',
-    url=u'https://github.com/evoluxbr/greenswitch',
-    license=u'MIT',
-    packages=find_packages(exclude=('tests', 'docs')),
+    name='filestack-python',
+    version=read_version(),
+    license='Apache 2.0',
+    description='Filestack Python SDK',
+    long_description='Visit: https://github.com/filestack/filestack-python',
+    url='https://github.com/filestack/filestack-python',
+    author='filestack.com',
+    author_email='support@filestack.com',
+    packages=find_packages(),
+    install_requires=[
+        'requests==2.24.0',
+        'trafaret==2.0.2'
+    ],
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
+        'Topic :: Internet :: WWW/HTTP',
     ],
-    install_requires=requires
 )
