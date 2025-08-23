@@ -1,25 +1,28 @@
-import setuptools
-from glob import glob
+from setuptools import setup
 
-setuptools.setup(
-    name="jupyter-server-proxy",
-    version='1.5.2',
-    url="https://github.com/jupyterhub/jupyter-server-proxy",
-    author="Ryan Lovett & Yuvi Panda",
-    author_email="rylo@berkeley.edu",
-    license="BSD 3-Clause",
-    description="Jupyter server extension to supervise and proxy web services",
-    packages=setuptools.find_packages(),
-    install_requires=['notebook<7', 'simpervisor>=0.2', 'aiohttp'],
-    python_requires='>=3.5',
+
+setup(
+    name='pygelf',
+    version='0.4.2',
+    packages=['pygelf'],
+    description='Logging handlers with GELF support',
+    keywords='logging udp tcp ssl tls graylog2 graylog gelf',
+    author='Ivan Mukhin',
+    author_email='muhin.ivan@gmail.com',
+    url='https://github.com/keeprocking/pygelf',
+    long_description=open('README.rst').read(),
+    license='MIT',
     classifiers=[
-        'Framework :: Jupyter',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
+        'Topic :: System :: Logging',
+        'Topic :: Software Development :: Libraries :: Python Modules'
     ],
-    data_files=[
-        ('share/jupyter/nbextensions/jupyter_server_proxy', glob('jupyter_server_proxy/static/*')),
-        ('etc/jupyter/jupyter_notebook_config.d', ['jupyter_server_proxy/etc/jupyter-server-proxy-serverextension.json']),
-        ('etc/jupyter/nbconfig/tree.d', ['jupyter_server_proxy/etc/jupyter-server-proxy-nbextension.json'])
-    ],
-    include_package_data=True,
-    zip_safe=False
 )
