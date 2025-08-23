@@ -1,96 +1,136 @@
-# python-dispatch
-Lightweight event handling for Python
+# OpenCage Geocoding Module for Python
 
-[![Build Status](https://travis-ci.org/nocarryr/python-dispatch.svg?branch=master)](https://travis-ci.org/nocarryr/python-dispatch)[![Coverage Status](https://coveralls.io/repos/github/nocarryr/python-dispatch/badge.svg?branch=master)](https://coveralls.io/github/nocarryr/python-dispatch?branch=master)[![PyPI version](https://badge.fury.io/py/python-dispatch.svg)](https://badge.fury.io/py/python-dispatch)[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/nocarryr/python-dispatch/master/LICENSE.txt)
+A Python module to access the [OpenCage Geocoding API](https://opencagedata.com/).
 
-## Description
-This is an implementation of the "Observer Pattern" with inspiration from the
-[Kivy](kivy.org) framework. Many of the features though are intentionally
-stripped down and more generalized. The goal is to have a simple drop-in
-library with no dependencies that stays out of the programmer's way.
+## Build Status / Code Quality / etc
 
-## Installation
-```
-pip install python-dispatch
-```
+[![PyPI version](https://badge.fury.io/py/opencage.svg)](https://badge.fury.io/py/opencage)
+[![Downloads](https://pepy.tech/badge/opencage/month)](https://pepy.tech/project/opencage)
+[![Versions](https://img.shields.io/pypi/pyversions/opencage)](https://pypi.org/project/opencage/)
+![GitHub contributors](https://img.shields.io/github/contributors/opencagedata/python-opencage-geocoder)
+[![Build Status](https://github.com/OpenCageData/python-opencage-geocoder/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/OpenCageData/python-opencage-geocoder/actions/workflows/build.yml)
+![Mastodon Follow](https://img.shields.io/mastodon/follow/109287663468501769?domain=https%3A%2F%2Fen.osm.town%2F&style=social)
 
-## Links
+## Tutorial
 
-|               |                                              |
-| -------------:|:-------------------------------------------- |
-| Project Home  | https://github.com/nocarryr/python-dispatch  |
-| PyPI          | https://pypi.python.org/pypi/python-dispatch |
-| Documentation | https://python-dispatch.readthedocs.io       |
-
+You can find a [comprehensive tutorial for using this module on the OpenCage site](https://opencagedata.com/tutorials/geocode-in-python).
 
 ## Usage
 
-### Events
+Supports Python 3.7 or newer. Use the older opencage 1.x releases if you need Python 2.7 support.
 
-```python
->>> from pydispatch import Dispatcher
->>> class MyEmitter(Dispatcher):
-...     # Events are defined in classes and subclasses with the '_events_' attribute
-...     _events_ = ['on_state', 'new_data']
-...     def do_some_stuff(self):
-...         # do stuff that makes new data
-...         data = {'foo':'bar'}
-...         # Then emit the change with optional positional and keyword arguments
-...         self.emit('new_data', data=data)
-...
->>> # An observer - could inherit from Dispatcher or any other class
->>> class MyListener(object):
-...     def on_new_data(self, *args, **kwargs):
-...         data = kwargs.get('data')
-...         print('I got data: {}'.format(data))
-...     def on_emitter_state(self, *args, **kwargs):
-...         print('emitter state changed')
-...
->>> emitter = MyEmitter()
->>> listener = MyListener()
->>> emitter.bind(on_state=listener.on_emitter_state)
->>> emitter.bind(new_data=listener.on_new_data)
->>> emitter.do_some_stuff()
-I got data: {'foo': 'bar'}
->>> emitter.emit('on_state')
-emitter state changed
+Install the module:
 
+```bash
+pip install opencage
 ```
 
-### Properties
+Load the module:
 
 ```python
->>> from pydispatch import Dispatcher, Property
->>> class MyEmitter(Dispatcher):
-...     # Property objects are defined and named at the class level.
-...     # They will become instance attributes that will emit events when their values change
-...     name = Property()
-...     value = Property()
-...
->>> class MyListener(object):
-...     def on_name(self, instance, value, **kwargs):
-...         print('emitter name is {}'.format(value))
-...     def on_value(self, instance, value, **kwargs):
-...         print('emitter value is {}'.format(value))
-...
->>> emitter = MyEmitter()
->>> listener = MyListener()
->>> emitter.bind(name=listener.on_name, value=listener.on_value)
->>> emitter.name = 'foo'
-emitter name is foo
->>> emitter.value = 42
-emitter value is 42
-
+from opencage.geocoder import OpenCageGeocode
 ```
 
-## Contributing
+Create an instance of the geocoder module, passing a valid OpenCage Data Geocoder API key
+as a parameter to the geocoder modules's constructor:
 
-Contributions are welcome!
+```python
+key = 'your-api-key-here'
+geocoder = OpenCageGeocode(key)
+```
 
-If you want to contribute through code or documentation, please see the
-[Contributing Guide](CONTRIBUTING.md) for information.
+Pass a string containing the query or address to be geocoded to the modules' `geocode` method:
 
-## License
+```python
+query = '82 Clerkenwell Road, London'
+results = geocoder.geocode(query)
+```
 
-This project is released under the MIT License. See the [LICENSE](LICENSE.txt) file
-for more information.
+You can add [additional parameters](https://opencagedata.com/api#forward-opt):
+
+```python
+results = geocoder.geocode('London', no_annotations=1, language='es')
+```
+
+For example you can use the proximity parameter to provide the geocoder with a hint:
+
+```python
+results = geocoder.geocode('London', proximity='42.828576, -81.406643')
+print(results[0]['formatted'])
+# u'London, ON N6A 3M8, Canada'
+```
+
+### Reverse geocoding
+
+Turn a lat/long into an address with the `reverse_geocode` method:
+
+```python
+result = geocoder.reverse_geocode(51.51024, -0.10303)
+```
+
+### Sessions
+
+You can reuse your HTTP connection for multiple requests by
+using a `with` block. This can help performance when making
+a lot of requests:
+
+```python
+queries = ['82 Clerkenwell Road, London', ...]
+with OpenCageGeocode(key) as geocoder:
+    # Queries reuse the same HTTP connection
+    results = [geocoder.geocode(query) for query in queries]
+```
+
+### Asyncronous requests
+
+You can run requests in parallel with the `geocode_async` and `reverse_geocode_async`
+method which have the same parameters and response as their synronous counterparts.
+You will need at least Python 3.7 and the `asyncio` and `aiohttp` packages installed.
+
+```python
+async with OpenCageGeocode(key) as geocoder:
+    results = await geocoder.geocode_async(address)
+```
+
+For a more complete example and links to futher tutorials on asyncronous IO see
+`batch.py` in the `examples` directory.
+
+### Non-SSL API use
+
+If you have trouble accesing the OpenCage API with https, e.g. issues with OpenSSL
+libraries in your enviroment, then you can set the 'http' protocol instead. Please
+understand that the connection to the OpenCage API will no longer be encrypted.
+
+```python
+geocoder = OpenCageGeocode('your-api-key', 'http')
+```
+
+### Command-line batch geocoding
+
+See `examples/batch.py` for an example to geocode a CSV file.
+
+<img src="batch-progress.gif"/>
+
+### Exceptions
+
+If anything goes wrong, then an exception will be raised:
+
+- `InvalidInputError` for non-unicode query strings
+- `NotAuthorizedError` if API key is missing, invalid syntax or disabled
+- `ForbiddenError` API key is blocked or suspended
+- `RateLimitExceededError` if you go past your rate limit
+- `UnknownError` if there's some problem with the API (bad results, 500 status code, etc)
+
+## Copyright & License
+
+This software is copyright OpenCage GmbH.
+Please see `LICENSE.txt`
+
+### Who is OpenCage GmbH?
+
+<a href="https://opencagedata.com"><img src="opencage_logo_300_150.png"/></a>
+
+We run a worldwide [geocoding API](https://opencagedata.com/api) and [geosearch](https://opencagedata.com/geosearch) service based on open data.
+Learn more [about us](https://opencagedata.com/about).
+
+We also run [Geomob](https://thegeomob.com), a series of regular meetups for location based service creators, where we do our best to highlight geoinnovation. If you like geo stuff, you will probably enjoy [the Geomob podcast](https://thegeomob.com/podcast/).
