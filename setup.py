@@ -1,45 +1,61 @@
-from distutils.core import setup
+from setuptools import setup
 
-with open('requirements.txt') as f:
-    required = f.read().splitlines()
+import os
+
+requirements_filename = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'requirements.txt')
+
+with open(requirements_filename) as fd:
+    install_requires = [i.strip() for i in fd.readlines()]
+
+requirements_dev_filename = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'requirements-dev.txt')
+
+with open(requirements_filename) as fd:
+    tests_require = [i.strip() for i in fd.readlines()]
+
+long_description_filename = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'README.md')
+
+with open(long_description_filename) as fd:
+    long_description = fd.read()
 
 setup(
-    name='moira-client',
-    version='2.4',
-    description='Client for Moira - Alerting system based on Graphite data',
-    keywords='moira monitoring client metrics alerting',
-    long_description="""
-        Moira is a real-time alerting tool, based on Graphite data.
-        moira-client is a python client for Moira API.
-        Key features:
-        - create, update, delete, manage triggers
-        - create, delete, update subscriptions
-        - manage tags, patterns, notifications, events, contacts
-    """,
-    author = 'Alexander Lukyanchenko',
-    author_email = 'al.lukyanchenko@gmail.com',
-    packages=[
-        'moira_client',
-        'moira_client.models'
-    ],
+    name='fierce',
+    version='1.4.0',
+    description='A DNS reconnaissance tool for locating non-contiguous IP space.',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    url='https://github.com/mschwager/fierce',
+    packages=['fierce'],
+    package_dir={'fierce': 'fierce'},
+    license='GPLv3',
     classifiers=[
-        'Development Status :: 4 - Beta',
-
-        'Programming Language :: Python :: 3',
+        'Environment :: Console',
+        'Intended Audience :: Information Technology',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
-
-        'Operating System :: OS Independent',
-        'Intended Audience :: Developers',
-
-        'Topic :: Software Development :: Libraries',
-        'Topic :: Utilities',
-        'Topic :: System :: Monitoring',
-
-        "License :: OSI Approved :: MIT License"
+        'Programming Language :: Python :: 3.10',
+        'Topic :: Security',
     ],
-    url='https://github.com/moira-alert/python-moira-client',
-    install_requires=required
+    install_requires=install_requires,
+    tests_require=tests_require,
+    python_requires='>=3.0',
+    entry_points={
+        'console_scripts': [
+            'fierce = fierce.fierce:main',
+        ],
+    },
+    package_data={
+        'fierce': [
+            'lists/*.txt',
+        ],
+    },
 )

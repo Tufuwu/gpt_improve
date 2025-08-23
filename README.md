@@ -1,128 +1,148 @@
-[![Build Status](https://travis-ci.org/moira-alert/python-moira-client.svg?branch=master)](https://travis-ci.org/moira-alert/python-moira-client)
+# Fierce
 
-# Moira Client
+[![CI](https://github.com/mschwager/fierce/actions/workflows/ci.yml/badge.svg)](https://github.com/mschwager/fierce/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/mschwager/fierce/badge.svg?branch=master)](https://coveralls.io/github/mschwager/fierce?branch=master)
+[![Dlint](https://github.com/mschwager/fierce/actions/workflows/dlint.yml/badge.svg)](https://github.com/mschwager/fierce/actions/workflows/dlint.yml)
+[![Python Versions](https://img.shields.io/pypi/pyversions/fierce.svg)](https://img.shields.io/pypi/pyversions/fierce.svg)
+[![PyPI Version](https://img.shields.io/pypi/v/fierce.svg)](https://img.shields.io/pypi/v/fierce.svg)
 
-If you're new here, better check out our main [README](https://github.com/moira-alert/moira/blob/master/README.md).
+Fierce is a `DNS` reconnaissance tool for locating non-contiguous IP space.
 
-Python client for Moira.
+Useful links:
 
-# Installation
+* [Domain Name System (DNS)](https://en.wikipedia.org/wiki/Domain_Name_System)
+  * [Domain Names - Concepts and Facilities](https://tools.ietf.org/html/rfc1034)
+  * [Domain Names - Implementation and Specification](https://tools.ietf.org/html/rfc1035)
+  * [Threat Analysis of the Domain Name System (DNS)](https://tools.ietf.org/html/rfc3833)
+* [Name Servers (NS)](https://en.wikipedia.org/wiki/Domain_Name_System#Name_servers)
+* [State of Authority Record (SOA)](https://en.wikipedia.org/wiki/List_of_DNS_record_types#SOA)
+* [Zone Transfer](https://en.wikipedia.org/wiki/DNS_zone_transfer)
+  * [DNS Zone Transfer Protocol (AXFR)](https://tools.ietf.org/html/rfc5936)
+  * [Incremental Zone Transfer in DNS (IXFR)](https://tools.ietf.org/html/rfc1995)
+* [Wildcard DNS Record](https://en.wikipedia.org/wiki/Wildcard_DNS_record)
+
+# Overview
+
+First, credit where credit is due, `fierce` was originally written by RSnake
+along with others at http://ha.ckers.org/. This is simply a conversion to
+Python 3 to simplify and modernize the codebase.
+
+The original description was very apt, so I'll include it here:
+
+> Fierce is a semi-lightweight scanner that helps locate non-contiguous
+> IP space and hostnames against specified domains. It's really meant
+> as a pre-cursor to nmap, unicornscan, nessus, nikto, etc, since all 
+> of those require that you already know what IP space you are looking 
+> for. This does not perform exploitation and does not scan the whole 
+> internet indiscriminately. It is meant specifically to locate likely 
+> targets both inside and outside a corporate network. Because it uses 
+> DNS primarily you will often find mis-configured networks that leak 
+> internal address space. That's especially useful in targeted malware.
+
+# Installing
 
 ```
-pip install moira-client
+$ python -m pip install fierce
+$ fierce -h
 ```
 
-# Getting started
+OR
 
-Initialize Moira client:
 ```
-from moira_client import Moira
-
-moira = Moira('http://localhost:8888/api/')
-```
-
-## Triggers
-
-### Create new trigger
-```
-from moira_client.models.trigger import STATE_ERROR
-
-trigger = moira.trigger.create(
-    id='service_trigger_name',
-    name='Trigger name',
-    tags=['service'],
-    targets=['prefix.service.*.postfix'],
-    warn_value=300,
-    error_value=600,
-    desc='my trigger',
-    ttl_state=STATE_ERROR
-)
-
-trigger.disable_day('Tue')
-trigger.save()
-print(trigger.id)
+$ git clone https://github.com/mschwager/fierce.git
+$ cd fierce
+$ python -m pip install -r requirements.txt
+$ python fierce/fierce.py -h
 ```
 
-> **Note:** id parameter is not required but highly recommended for large production solutions <br>
-> (e.q. fetch_by_id will work faster than is_exist).
-> If parameter is not specified, random trigger guid will be generated.
+*Requires Python 3.*
 
-### Update triggers
-Turn off all triggers for Monday.
+# Using
+
+Let's start with something basic:
+
 ```
-triggers = moira.trigger.fetch_all()
-for trigger in triggers:
-    trigger.disable_day('Mon')
-    trigger.update()
+$ fierce --domain google.com --subdomains accounts admin ads
 ```
 
-### Delete trigger
+Traverse IPs near discovered domains to search for contiguous blocks with the
+`--traverse` flag:
+
 ```
-trigger = moira.trigger.fetch_by_id('bb1a8514-128b-406e-bec3-25e94153ab30')
-moira.trigger.delete(trigger.id)
+$ fierce --domain facebook.com --subdomains admin --traverse 10
 ```
 
-### Check whether trigger exists or not (manually)
-```
-trigger = moira.trigger.create(
-    name='service',
-    targets=['service.rps'],
-    tags=['ops']
-)
+Limit nearby IP traversal to certain domains with the `--search` flag:
 
-if not moira.trigger.is_exist(trigger):
-    trigger.save()
+```
+$ fierce --domain facebook.com --subdomains admin --search fb.com fb.net
 ```
 
-### Get non existent triggers
+Attempt an `HTTP` connection on domains discovered with the `--connect` flag:
+
 ```
-trigger1 = moira.trigger.create(
-    name='service',
-    targets=['service.rps'],
-    tags=['ops']
-)
-
-trigger2 = moira.trigger.create(
-    name='site',
-    targets=['site.rps'],
-    tags=['ops']
-)
-
-triggers = [trigger1, trigger2]
-
-non_existent_triggers = moira.trigger.get_non_existent(triggers)
+$ fierce --domain stackoverflow.com --subdomains mail --connect
 ```
 
-## Subscription
+Exchange speed for breadth with the `--wide` flag, which looks for nearby
+domains on all IPs of the [/24](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing#IPv4_CIDR_blocks)
+of a discovered domain:
 
-### Create subscription
 ```
-subscription = moira.subscription.create(
-    contacts=['79ac9de2-a3b3-4f94-b3ea-74f6f4094fd2'],
-    tags=['tag']
-)
-subscription.save()
+$ fierce --domain facebook.com --wide
 ```
 
-### Delete subscription
-Delete all subscriptions
+Zone transfers are rare these days, but they give us the keys to the DNS castle.
+[zonetransfer.me](https://digi.ninja/projects/zonetransferme.php) is a very
+useful service for testing for and learning about zone transfers:
+
 ```
-subscriptions = moira.subscription.fetch_all()
-for subscription in subscriptions:
-    moira.subscription.delete(subscription.id)
+$ fierce --domain zonetransfer.me
 ```
 
-## Contact
+To save the results to a file for later use we can simply redirect output:
 
-### Get all contacts
 ```
-contacts = moira.contact.fetch_all()
-for contact in contacts:
-    print(contact.id)
+$ fierce --domain zonetransfer.me > output.txt
 ```
 
-### Get contact id by type and value
+Internal networks will often have large blocks of contiguous IP space assigned.
+We can scan those as well:
+
 ```
-contact_id = moira.contact.get_id(type='slack', value='#err')
-print(contact_id)
+$ fierce --dns-servers 10.0.0.1 --range 10.0.0.0/24
+```
+
+Check out `--help` for further information:
+
+```
+$ fierce --help
+```
+
+# Developing
+
+First, install development packages:
+
+```
+$ python -m pip install -r requirements.txt
+$ python -m pip install -r requirements-dev.txt
+$ python -m pip install -e .
+```
+
+## Testing
+
+```
+$ pytest
+```
+
+## Linting
+
+```
+$ flake8
+```
+
+## Coverage
+
+```
+$ pytest --cov
 ```
