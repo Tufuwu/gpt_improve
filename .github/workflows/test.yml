@@ -1,19 +1,14 @@
-name: Python package
+name: CI
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10]
+        python-version: ['3.x']
 
     steps:
     - uses: actions/checkout@v2
@@ -22,14 +17,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
-      run: pip install -r dev-requirements.txt
-    - name: Lint with flake8
-      run: flake8 sendgrid_backend/
-    - name: Check import sorting with isort
-      run: isort -c ./
-    - name: Check code format with black
-      run: black --check ./
-    - name: Type check with mypy
-      run: mypy sendgrid_backend/
-    - name: Test with tox
-      run: tox
+      run: pip install -r requirements.txt
+    - name: Make generate.py executable
+      run: chmod +x generate.py
+    - name: Run script
+      run: |
+        echo "from Default.settings import *" > settings.py
+        ./generate.py
+      shell: bash
