@@ -1,24 +1,25 @@
-name: CI
+name: Python package
 
 on:
   push:
     branches:
-      - '**'
-      - '!dependabot/**'
+      - main
   pull_request:
     branches:
-      - '**'
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, pypy-3.6]
+        python-version: [3.8, 3.9]
+        numpy-version: [1.15.4, 1.19.4]
         include:
           - python-version: 3.8
-            env:
-              OLD_CRYPTOGRAPHY: 2.6.1
+            numpy-version: 1.15.4
+          - python-version: 3.9
+            numpy-version: 1.19.4
 
     steps:
     - uses: actions/checkout@v2
@@ -26,12 +27,15 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-distutils python3-dev
     - name: Install dependencies
       run: |
-        if [ -n "${{ matrix.env.OLD_CRYPTOGRAPHY }}" ]; then
-          pip install cryptography==${{ matrix.env.OLD_CRYPTOGRAPHY }}
-        fi
-    - name: Run script
-      run: |
-        chmod +x ci/travis.sh
-        ./ci/travis.sh
+        pip install --upgrade pip
+        pip install numpy==${{ matrix.numpy-version }} scipy matplotlib>=3 cython>=0.28
+    - name: Build package
+      run: dev/build.sh
+    - name: Run tests
+      run: dev/test.sh
