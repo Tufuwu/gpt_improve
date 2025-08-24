@@ -1,4 +1,4 @@
-name: Python package
+name: CI
 
 on:
   push:
@@ -10,11 +10,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10]
-        requirements-file: [minimal_requirements.txt, requirements.txt]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -24,20 +23,24 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+        fail-on-cache-miss: false
+
     - name: Install dependencies
-      run: |
-        pip install -r ${{ matrix.requirements-file }}
-        pip install --upgrade pytest
-        pip install pytest-cov codecov
+      run: pip install .[test] codecov
 
-    - name: Set environment variable
-      run: echo "MPLBACKEND=Agg" >> $GITHUB_ENV
+    - name: Make run-tests.py executable
+      run: chmod +x ./run-tests.py
 
-    - name: Test with pytest
-      run: python -m pytest --cov=fgivenx
+    - name: Run tests
+      run: ./run-tests.py
 
     - name: Upload coverage to Codecov
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      run: |
-        codecov
+      if: success()
+      run: codecov
