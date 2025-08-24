@@ -1,45 +1,48 @@
-from distutils.core import setup
+#!/usr/bin/env python
 
-with open('requirements.txt') as f:
-    required = f.read().splitlines()
+"""Setup for docformatter."""
 
-setup(
-    name='moira-client',
-    version='2.4',
-    description='Client for Moira - Alerting system based on Graphite data',
-    keywords='moira monitoring client metrics alerting',
-    long_description="""
-        Moira is a real-time alerting tool, based on Graphite data.
-        moira-client is a python client for Moira API.
-        Key features:
-        - create, update, delete, manage triggers
-        - create, delete, update subscriptions
-        - manage tags, patterns, notifications, events, contacts
-    """,
-    author = 'Alexander Lukyanchenko',
-    author_email = 'al.lukyanchenko@gmail.com',
-    packages=[
-        'moira_client',
-        'moira_client.models'
-    ],
-    classifiers=[
-        'Development Status :: 4 - Beta',
+from __future__ import (absolute_import,
+                        division,
+                        print_function,
+                        unicode_literals)
 
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
+import ast
+from pathlib import Path
 
-        'Operating System :: OS Independent',
-        'Intended Audience :: Developers',
+from setuptools import setup
 
-        'Topic :: Software Development :: Libraries',
-        'Topic :: Utilities',
-        'Topic :: System :: Monitoring',
 
-        "License :: OSI Approved :: MIT License"
-    ],
-    url='https://github.com/moira-alert/python-moira-client',
-    install_requires=required
-)
+def version():
+    """Return version string."""
+    with open('docformatter.py') as input_file:
+        for line in input_file:
+            if line.startswith('__version__'):
+                return ast.parse(line).body[0].value.s
+
+
+setup(name='docformatter',
+        version=version(),
+        description='Formats docstrings to follow PEP 257.',
+        long_description=Path('README.rst').read_text(),
+        license='Expat License',
+        author='Steven Myint',
+        url='https://github.com/myint/docformatter',
+        classifiers=['Intended Audience :: Developers',
+                    'Environment :: Console',
+                    'Programming Language :: Python :: 3',
+                    'Programming Language :: Python :: 3.6',
+                    'Programming Language :: Python :: 3.7',
+                    'Programming Language :: Python :: 3.8',
+                    'Programming Language :: Python :: 3.9',
+                    'Programming Language :: Python :: 3.10',
+                    'Programming Language :: Python :: Implementation',
+                    'Programming Language :: Python :: Implementation :: PyPy',
+                    'Programming Language :: Python :: Implementation :: CPython',
+                    'License :: OSI Approved :: MIT License'],
+        keywords='PEP 257, pep257, style, formatter, docstrings',
+        py_modules=['docformatter'],
+        entry_points={
+            'console_scripts': ['docformatter = docformatter:main']},
+        install_requires=['untokenize'],
+        test_suite='test_docformatter')
