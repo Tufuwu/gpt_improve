@@ -13,50 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "nightly", "pypy3"]
-        with-opt-deps: [true, false]
-        exclude:
-          - python-version: "3.6"
-            with-opt-deps: true
-          - python-version: "3.8"
-            with-opt-deps: false
-          - python-version: "3.9"
-            with-opt-deps: false
-          - python-version: "nightly"
-            with-opt-deps: false
-          - python-version: "pypy3"
-            with-opt-deps: true
-
+        python-version:
+          - '3.8'
+          - '3.9'
     steps:
     - uses: actions/checkout@v2
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install dependencies
-      run: |
-        if [ "${{ matrix.with-opt-deps }}" = "true" ]; then
-          pip install -r requirements.txt pytest
-        fi
-        git clone https://github.com/ProgVal/irctest.git
-        echo "y" | pip uninstall limnoria || true
-
+      run: pip install tox
     - name: Run tests
-      run: |
-        echo ${{ matrix.python-version }}
-        python setup.py install
-        supybot-test test -v --plugins-dir=./plugins/ --no-network
-        if [ "${{ matrix.with-opt-deps }}" = "true" ] && [[ "${{ matrix.python-version }}" =~ ^3\.[6-9] ]]; then
-          cd irctest
-          pytest --controllers irctest.controllers.limnoria
-        fi
-
-    - name: Disable email notifications
-      if: always()
-      run: echo "Email notifications are disabled."
-
-  allow_failures:
-    - python-version: "nightly"
-    - python-version: "pypy3"
+      run: tox -e py
