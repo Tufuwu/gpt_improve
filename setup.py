@@ -1,59 +1,79 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#
+# Copyright 2015-2019 by Hartmut Goebel <h.goebel@crazy-compilers.com>
+#
+# This file is part of unittest2pytest.
+#
+# unittest2pytest is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 from setuptools import setup
-import os
 import re
 
-# Lovingly adapted from https://github.com/kennethreitz/requests/blob/39d693548892057adad703fda630f925e61ee557/setup.py#L50-L55
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pusher/version.py'), 'r') as fd:
-    VERSION = re.search(r'^VERSION = [\']([^\']*)[\']',
-                        fd.read(), re.MULTILINE).group(1)
 
-if not VERSION:
-    raise RuntimeError('Ensure `VERSION` is correctly set in ./pusher/version.py')
+def get_version(filename):
+    """
+    Return package version as listed in `__version__` in `filename`.
+    """
+    init_py = open(filename).read()
+    return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
+
+
+version = get_version('unittest2pytest/__init__.py')
+
+
+def read(filename):
+    return open(filename, 'r', encoding='utf-8').read()
+
+
+long_description = '\n\n'.join([read('README.rst'),
+                                read('CHANGES.rst')])
+
 
 setup(
-    name='pusher',
-    version=VERSION,
-    description='A Python library to interract with the Pusher Channels API',
-    url='https://github.com/pusher/pusher-http-python',
-    author='Pusher',
-    author_email='support@pusher.com',
+    name="unittest2pytest",
+    license='GPLv3+',
+    version=version,
+    description="Convert unittest test-cases to pytest",
+    long_description=long_description,
+    author="Hartmut Goebel",
+    author_email="h.goebel@crazy-compilers.com",
+    url="https://github.com/pytest-dev/unittest2pytest",
+    packages=["unittest2pytest", "unittest2pytest.fixes"],
+    entry_points={
+        'console_scripts': [
+            'unittest2pytest = unittest2pytest.__main__:main',
+        ],
+    },
     classifiers=[
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python',
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Developers',
-        'Topic :: Internet :: WWW/HTTP',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 3',
+        "Development Status :: 4 - Beta",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Topic :: Software Development",
+        "Topic :: Utilities",
     ],
-    keywords='pusher rest realtime websockets service',
-    license='MIT',
-
-    packages=[
-        'pusher'
-    ],
-
-    install_requires=[
-        'six',
-        'requests>=2.3.0',
-        'urllib3',
-        'pyopenssl',
-        'ndg-httpsclient',
-        'pyasn1',
-        'pynacl'
-    ],
-
-    tests_require=['nose', 'mock', 'HTTPretty'],
-
-    extras_require={
-        'aiohttp': ['aiohttp>=0.20.0'],
-        'tornado': ['tornado>=5.0.0']
-    },
-
-    package_data={
-        'pusher': ['cacert.pem']
-    },
-
-    test_suite='pusher_tests',
+    python_requires=">=3.6",
+    zip_safe=False
 )
