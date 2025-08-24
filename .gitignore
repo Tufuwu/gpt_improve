@@ -1,9 +1,16 @@
-.*.swp
+syntax: glob
 *.pyc
-venv/
-
-.coverage
 *.egg-info
-.pytest_cache
-dist/
-htmlcov/
+*.egg
+EGG-INFO
+dist
+build
+py2*
+py3*
+.tox
+*.wpr
+*.wpu
+*.bak
+*.class
+.venv
+.env
